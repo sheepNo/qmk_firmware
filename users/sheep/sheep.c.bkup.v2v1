@@ -1,0 +1,766 @@
+#include QMK_KEYBOARD_H
+
+#ifdef OLED_ENABLE
+enum layers {
+    _BASE = 0,
+    _MOVE = 1,
+    _NUM = 2,
+    _SETTINGS = 3,
+};
+
+enum encoder_modes {
+    _PAGE = 0,
+    _MOUSE = 1,
+    _MUSIC = 2,
+    _RGB = 3,
+};
+
+#define ANIM_FRAME_DURATION 50  // how long each frame lasts in ms
+#define SLIDE_FRAME_DURATION 10  // how long each frame lasts in ms
+#define RIGHT true
+#define LEFT false
+#define BEGINING 0
+#define MIDDLE 1
+#define END 2
+
+uint8_t startup = 3;
+enum encoder_modes encoder_mode = _PAGE;
+bool new_content = true;
+
+#define DOUBLE_BAR
+#ifdef DOUBLE_BAR
+#   define PROGRESS_BAR_SIZE 16
+#endif 
+#ifndef DOUBLE_BAR
+#   define PROGRESS_BAR_SIZE 8
+#endif
+
+static const char empty_bar[] = {0x83, 0x84, 0x85, 0x0};
+
+enum cat_states {
+    SITTING = 0,
+    LICKING,
+    SLEEPY,
+    ASLEEP,
+    STANDING,
+    RUNNING,
+};
+static enum cat_states cat_state = ASLEEP;
+static uint8_t cat_idle_frame = 0;
+//static uint8_t cat_running_dir = 0;
+static uint8_t tail_frame = 0;
+static uint8_t sleepy_frame = 0;
+static uint8_t count_timer = 0;
+static uint8_t sleep_timer = 0;
+static uint8_t cat_pos[2] = {0, 0};
+
+//#define AWAKE_FRAME 0xAE
+//#define ASLEEP_FRAME
+
+static uint32_t anim_timer = 0;
+static uint8_t loop_circle = 0;
+//static uint8_t loop_cat = 0;
+//static uint8_t cat_state = 3;
+//static uint8_t cat_sleep_idle = 0;
+//static uint8_t cat_run_idle = 0;
+//static bool cat_awake = false;
+//static bool cat_transition = true;
+#define CAT_SLEEP_TIMEOUT 10000
+#define CAT_FRAME_DURATION 200
+static uint32_t anim_sleep = 0;
+
+uint8_t xshift8(void) {
+	static uint8_t x = 0, y = 0, z = 0, a = 1;
+	uint8_t t = x ^ (x << 5);
+	x = y;
+	y = z;
+	z = a;
+	return a = z ^ ( z >> 1) ^ t ^ (t << 3);
+}
+
+void render_cat(uint16_t bit_mask) {
+    if (sync_timer_elapsed32(anim_timer) > CAT_FRAME_DURATION) {
+        oled_clear();
+        oled_set_cursor(cat_pos[0], cat_pos[1]);
+
+        switch(cat_state) {
+            case SITTING:
+                oled_write_char(0xA4 + tail_frame, false);
+                oled_write_char(0xAE + cat_idle_frame, false);
+
+                count_timer++;
+                if (count_timer >= 20) {
+                    cat_idle_frame = (cat_idle_frame + 1) % 2;
+                    count_timer = 0;
+                }
+
+                if (xshift8() % 100 == 0) {
+                    cat_state = LICKING;
+                } 
+                
+                sleep_timer++;
+                if (sleep_timer >= 100) {
+                    cat_state = SLEEPY;
+                    sleep_timer = 0;
+                }
+
+                tail_frame = (tail_frame + 1) % 10;
+                break;
+            case LICKING:
+                oled_write_char(0xA4 + tail_frame, false);
+                oled_write_char(0xB5 + cat_idle_frame, false);
+
+                count_timer++;
+                if (count_timer % 2 == 0) {
+                    cat_idle_frame = (cat_idle_frame + 1) % 2;
+                }
+                if (count_timer >= 20) {
+                    cat_state = SITTING;
+                    count_timer = 0;
+                }
+
+                tail_frame = (tail_frame + 1) % 10;
+                break;
+            case SLEEPY:
+                oled_write_char(0xA4 + tail_frame, false);
+                oled_write_char(0xAF + sleepy_frame, false);
+                
+                sleepy_frame = (sleepy_frame + 1) % 4;
+                tail_frame = (tail_frame + 1) % 10;
+
+                if (sleepy_frame == 0) {
+                    cat_state = ASLEEP;
+                }
+                break;
+            case ASLEEP:
+                oled_write_char(0xB4, false);
+                oled_write_char(0xB2 + cat_idle_frame, false);
+
+                if (tail_frame != 7) {
+                    tail_frame = (tail_frame + 1) % 10;
+                }
+                
+                count_timer++;
+                if (count_timer >= 5) {
+                    cat_idle_frame = (cat_idle_frame + 1) % 2;
+                    count_timer = 0;
+                }
+
+                break;
+            case STANDING:
+                oled_write_char(0xCD, false);
+                oled_write_char(0xCE + cat_idle_frame, false);
+
+                count_timer++;
+                if (count_timer >= 20) {
+                    cat_idle_frame = (cat_idle_frame + 1) % 2;
+                    count_timer = 0;
+                }
+                break;
+            case RUNNING:
+                oled_write_char(0x8D + cat_idle_frame * 3, false);
+                oled_write_char(0x8E + cat_idle_frame * 3, false);
+                oled_write_char(0x8F + cat_idle_frame * 3, false);
+
+                cat_pos[0] = (cat_pos[0] + 2) % 18;
+                if (cat_pos[0] == 0) {
+                    cat_pos[1] = (cat_pos[1] + xshift8()) % 8;
+                    //cat_running_dir = (cat_running_dir == 0) ? 0x12 : 0x00;
+                }
+
+                cat_idle_frame = (cat_idle_frame + 1) % 2;
+
+                sleep_timer = 0;
+                break;
+        }
+
+        // extra exclamation mark when waking the cat up before changing state
+        if ((bit_mask > 0) && (cat_state == ASLEEP)) { // means timer has been reset
+            oled_write_char(0xA3, false);
+        }
+
+        // test changing state without transitions
+        //if (sync_timer_elapsed32(anim_sleep) > CAT_SLEEP_TIMEOUT) {
+        //    if (cat_state != ASLEEP) {
+        //        cat_state = SLEEPY;
+        //    }
+        //} else 
+        if (bit_mask > 14){
+            cat_state = RUNNING;
+        } else if (bit_mask > 2) {
+            cat_state = STANDING;
+        } else if ((cat_state != LICKING) && (cat_state != SLEEPY) && (cat_state != ASLEEP)) {
+            cat_state = SITTING;
+        }
+
+        anim_timer = sync_timer_read32();
+    }
+
+
+}
+
+//void render_cat(uint16_t bit_mask) {
+//    oled_write_char(0xA4 + loop_cat, false);
+//    oled_write_char(0xAF + cat_state + cat_sleep_idle, false);
+//
+//    if ((cat_awake) && (sync_timer_elapsed32(anim_sleep) > CAT_SLEEP_TIMEOUT)) { // cat_transition = true
+//        cat_transition = true;
+//    } else if ((!cat_awake) && (bit_mask > 0)) { // means timer has been reset
+//        cat_transition = true;
+//        oled_write_char(0xA3, false);
+//    }
+//
+//    oled_advance_page(true);
+
+//    if (sync_timer_elapsed32(anim_timer) > CAT_FRAME_DURATION) {
+//        if (cat_transition) { // cat_transition = true
+//            if (cat_awake) { // cat_awake is true
+//                cat_state = (cat_state + 1) % 4;
+//                if (cat_state == 3) {
+//                    cat_awake = false;
+//                    //cat_transition_timer = sync_timer_read32(); // 
+//                    cat_transition = false;
+//                }
+//            } else {
+//                cat_state = (cat_state - 1) % 4;
+//                if (cat_state == 0) {
+//                    cat_awake = true;
+//                    //cat_transition_timer = sync_timer_read32();
+//                    cat_transition = false;
+//                }
+//            }
+//        }
+
+//        // if cat is asleep and its tail is on position 7, don't move the tail.
+//        if ((cat_awake) || (loop_cat != 7)) {
+//            loop_cat = (loop_cat + 1) % 10;
+//        } 
+//
+//        if ((!cat_awake) && (!cat_transition)) {
+//            cat_sleep_idle = (cat_sleep_idle + 1) % 2;
+//        }
+//
+//        anim_timer = sync_timer_read32();
+//    }
+//}
+
+void render_loop(void) {
+    oled_write_char(0x89 + loop_circle, false);
+    loop_circle = (loop_circle + 1) & 3;
+}
+
+#ifdef DOUBLE_BAR
+void render_progress_bar(uint16_t bit_mask) {
+#endif
+#ifndef DOUBLE_BAR
+void render_progress_bar(uint8_t bit_mask) {
+#endif
+    static char loading_bar[PROGRESS_BAR_SIZE + 1];
+
+    loading_bar[0] = empty_bar[BEGINING] + ((bit_mask & 0x01) ? 0x03 : 0x0);
+    for (int i = 1; i < (PROGRESS_BAR_SIZE - 1); i++) {       
+        loading_bar[i] = empty_bar[MIDDLE] + ((bit_mask & (0x01 << i)) ? 0x03 : 0x0);
+    }
+    loading_bar[PROGRESS_BAR_SIZE - 1] = empty_bar[END] + ((bit_mask & (0x01 << (PROGRESS_BAR_SIZE - 1))) ? 0x03 : 0x0);
+
+    oled_write(loading_bar, false);
+}
+
+#ifdef DOUBLE_BAR
+uint16_t get_wpm_bit_mask(void) {
+#endif
+#ifndef DOUBLE_BAR
+uint8_t get_wpm_bit_mask(void) {
+#endif
+    #ifndef DOUBLE_BAR
+    static uint8_t bit_mask;
+    static uint8_t current_wpm;
+    current_wpm = (uint8_t)get_current_wpm();    
+
+    // with a twist : if wpm > 128 the first bit is kept to make sure 
+    // (PROGRESS_BAR_SIZE - current_wpm) < 0 so bit_mask == 0xFF 
+    current_wpm >>= 4; // position from 0 to 7 in a scale going +1 every 16wpm
+    // mask for the loading bar e.g. 0x00000011
+    //                                 |----| length is equal to bitwise not current_wpm
+    //bit_mask = 0xFF >> (~current_wpm); // not is more efficient than (8 - current_wpm)
+    bit_mask = 0xFF >> (PROGRESS_BAR_SIZE - current_wpm); // not is more efficient than (8 - current_wpm)
+    #endif
+
+    #ifdef DOUBLE_BAR
+    static uint16_t bit_mask;
+    static uint8_t current_wpm;
+    current_wpm = get_current_wpm();    
+
+    current_wpm >>= 3; // position from 0 to 7 in a scale going +1 every 16wpm
+
+    bit_mask = 0xFFFF >> (PROGRESS_BAR_SIZE - current_wpm); // not is more efficient than (8 - current_wpm)
+    #endif
+
+    return bit_mask;
+}
+
+#ifdef DYNAMIC_MACRO_ENABLE
+#define PRINT_DM_NB_FRAMES 6
+static bool recording = false;
+static bool full = false;
+static bool saved = false;
+static bool saved1 = false;
+uint32_t times_saved = PRINT_DM_NB_FRAMES + 1;
+static bool playing = false;
+static bool playing1 = false;
+uint32_t times_played = PRINT_DM_NB_FRAMES + 1;
+
+void dynamic_macro_record_start_user(void) {
+    recording = true;
+    full = false;
+}
+
+void dynamic_macro_play_user(int8_t direction) {
+    times_played = 0;
+    playing = true;
+    if (direction > 0) { // 4bytes lighter than playing1 = (direction > 0)
+        playing1 = true;
+    }
+}
+
+void dynamic_macro_record_end_user(int8_t direction) {
+    recording = false;
+    times_saved = 0;
+    saved = true;
+    if (direction > 0) {
+        saved1 = true;
+    }
+}
+
+void dynamic_macro_record_key_user(int8_t direction, keyrecord_t *record) {
+    full = true;
+}
+
+static void render_rec(void) { 
+    // macro related infos
+    if (recording) {
+        oled_write_P(PSTR("REC "), false);
+        if (full) {
+            oled_write_P(PSTR("FULL!"), false);
+        } else { //if (sync_timer_elapsed32(anim_timer) > ANIM_FRAME_DURATION) {
+            render_loop();
+            //anim_timer = sync_timer_read32();
+        }
+    }
+            
+    if (times_saved < PRINT_DM_NB_FRAMES) {
+        times_saved++;
+        oled_write_P(PSTR("SAVED"), false);
+        oled_write_P(saved1 ? PSTR(" 1") : PSTR(" 2"), false);
+    } else if (times_saved == PRINT_DM_NB_FRAMES) {
+        saved1 = false;
+        saved = false;
+    }
+
+    if (times_played < PRINT_DM_NB_FRAMES) {
+        times_played++;
+        oled_write_P(PSTR("PLAYED"), false);
+        oled_write_P(playing1 ? PSTR(" 1") : PSTR(" 2"), false);
+    } else if (times_played == PRINT_DM_NB_FRAMES) {
+        playing1 = false;
+        playing = false;
+    }
+}
+#endif // DYNAMIC_MACRO_ENABLE
+
+#ifdef RGBLIGHT_ENABLE
+enum RGBLIGHT_EFFECT_MODE rgb_mode;
+uint8_t rgb_val;
+uint8_t rgb_hue;
+char str_rgb[3+1];
+
+static void render_led_status(void) { 
+    // RGB animation mode 
+    rgb_mode = rgblight_get_mode();
+    itoa(rgb_mode, str_rgb, 10);
+    //oled_set_cursor(9, 7);
+    oled_write_P(PSTR("Mod "), false);
+    oled_write(str_rgb, false);
+    oled_write_char(0x00, false);
+
+    // Color aka 'rgb_hue'
+    rgb_hue = rgblight_get_hue();
+    itoa(rgb_hue, str_rgb, 10);
+    //oled_set_cursor(12, 7);
+    oled_write_P(PSTR("Hue "), false);
+    oled_write(str_rgb, false);
+    oled_write_char(0x00, false);
+
+    // brightness aka 'rgb_val'
+    rgb_val = rgblight_get_val();
+    itoa(rgb_val, str_rgb, 10);
+    //oled_set_cursor(16, 7);
+    oled_write_P(PSTR("Val "), false);
+    oled_write(str_rgb, false);
+}
+#endif // RGBLIGHT_ENABLE
+
+#define V2
+#define SLIDE_TABS
+static uint8_t previous_layer = 0;
+static uint8_t previous_encoder_mode = 0;
+
+#ifdef SLIDE_TABS
+static uint8_t appearing_letter_id = 0;
+static uint8_t appearing_letter_id_enc = 0;
+static const uint8_t str_pos_x[4] = {0, 5, 10, 15};
+
+static const char str_layers[4][4] = { 
+    {0x42, 0x41, 0x53, 0x45},
+    {0x4D, 0x4F, 0x56, 0x45},
+    {0x4E, 0x55, 0x4D, 0x53},
+    {0x50, 0x41, 0x52, 0x41},
+};
+
+static const char str_enc[4][5] = { 
+    {0x50, 0x41, 0x47, 0x45},
+    {0x4D, 0x4F, 0x55, 0x53},// 0x45},
+    {0x4D, 0x55, 0x53, 0x49},// 0x43},
+    {0x4C, 0x45, 0x44, 0x53},
+};
+
+static void slide_selected_enc(uint8_t encoder_mode) {
+    oled_set_cursor(str_pos_x[previous_encoder_mode], 0);
+    for (int i = 0; i < 4; i++) {
+        if (previous_encoder_mode < encoder_mode) {
+            oled_write_char(str_enc[previous_encoder_mode][i], (i > appearing_letter_id_enc));
+        } else {
+            oled_write_char(str_enc[previous_encoder_mode][i], (i + appearing_letter_id_enc < 3));
+        }
+    }
+    oled_set_cursor(str_pos_x[encoder_mode], 0);
+    for (int i = 0; i < 4; i++) {
+        if (previous_encoder_mode < encoder_mode) {
+            oled_write_char(str_enc[encoder_mode][i], (i <= appearing_letter_id_enc));
+        } else {
+            oled_write_char(str_enc[encoder_mode][i], (i + appearing_letter_id_enc >= 3));
+        }
+    }
+
+    appearing_letter_id_enc++;
+    //anim_timer = sync_timer_read32();
+
+    if (appearing_letter_id_enc == 4) {
+        previous_encoder_mode = encoder_mode;
+        appearing_letter_id_enc = 0;
+    }
+}
+
+static void slide_selected_layers(uint8_t highest_layer) {
+    oled_set_cursor(str_pos_x[previous_layer], 7);
+    for (int i = 0; i < 4; i++) {
+        if (previous_layer < highest_layer) {
+            oled_write_char(str_layers[previous_layer][i], (i > appearing_letter_id));
+        } else {
+            oled_write_char(str_layers[previous_layer][i], (i + appearing_letter_id < 3));
+        }
+    }
+    oled_set_cursor(str_pos_x[highest_layer], 7);
+    for (int i = 0; i < 4; i++) {
+        if (previous_layer < highest_layer) {
+            oled_write_char(str_layers[highest_layer][i], (i <= appearing_letter_id));
+        } else {
+            oled_write_char(str_layers[highest_layer][i], (i + appearing_letter_id >= 3));
+        }
+    }
+
+    appearing_letter_id++;
+    //anim_timer = sync_timer_read32();
+
+    if (appearing_letter_id == 4) {
+        previous_layer = highest_layer;
+        appearing_letter_id = 0;
+    }
+}
+#endif
+
+static void render_layer(void) { 
+    // layer related infos
+    //#ifdef V1
+    //switch (get_highest_layer(layer_state)) {
+    //    case _BASE:
+    //        led_t led_usb_state = host_keyboard_led_state();
+    //        oled_write_P(PSTR("BASE "), false);
+    //        oled_write_P(led_usb_state.caps_lock ? PSTR("CAP ") : PSTR(""), false);
+    //        oled_write_P(led_usb_state.scroll_lock ? PSTR("SCR") : PSTR(""), false);
+    //        break;
+    //    case _MOVE:
+    //        oled_write_P(PSTR("MOVE"), false);
+    //        break;
+    //    case _NUM:
+    //        oled_write_P(PSTR("NUMBERS"), false);
+    //        break;
+    //    case _SETTINGS:
+    //        oled_write_P(PSTR("SETTINGS"), false);
+    //        #ifdef RGBLIGHT_ENABLE
+    //        oled_set_cursor(9, 7);
+    //        render_led_status();
+    //        #endif // RGBLIGHT_ENABLE
+    //}
+    //#endif
+    #ifdef V2
+    static uint8_t highest_layer;
+    highest_layer = get_highest_layer(layer_state);
+    #ifdef SLIDE_TABS
+    if (highest_layer != previous_layer) {
+            slide_selected_layers(highest_layer);
+    } else {
+    #endif //SLIDE_TABS
+    #ifndef SLIDE_TABS
+    if (highest_layer != previous_layer) {
+    #endif
+        oled_write_P(PSTR("BASE"), highest_layer == _BASE);
+        oled_write_char(0x00, false);
+        oled_write_P(PSTR("MOVE"), highest_layer == _MOVE);
+        oled_write_char(0x00, false);
+        oled_write_P(PSTR("NUMS"), highest_layer == _NUM);
+        oled_write_char(0x00, false);
+        oled_write_P(PSTR("PARA"), highest_layer == _SETTINGS);
+        previous_layer = highest_layer;
+    }
+    #endif
+}
+
+void render_enc_state(void) {
+    #ifdef SLIDE_TABS
+    if (encoder_mode != previous_encoder_mode) {
+        //if (sync_timer_elapsed32(anim_timer) > SLIDE_FRAME_DURATION) {
+            slide_selected_enc(encoder_mode);
+        //}
+    } else {
+    #endif //SLIDE_TABS
+    #ifndef SLIDE_TABS
+    if (encoder_mode != previous_encoder_mode) {
+    #endif
+        oled_write_P(PSTR("PAGE"), encoder_mode == _PAGE);
+        oled_write_char(0x00, false);
+        oled_write_P(PSTR("MOUS"), encoder_mode == _MOUSE);
+        oled_write_char(0x00, false);
+        oled_write_P(PSTR("MUSI"), encoder_mode == _MUSIC);
+        oled_write_char(0x00, false);
+        oled_write_P(PSTR("LEDS"), encoder_mode == _RGB);
+        previous_encoder_mode = encoder_mode;
+    }
+}
+
+void render_encoder_info(void) {
+    switch(encoder_mode) {
+        case _PAGE:
+            oled_write_P(PSTR("L: Vol +/- (Mute)"), false);
+            oled_advance_page(true);
+            oled_write_P(PSTR("R: PgUp/PgDn"), false);
+            oled_advance_page(true);
+            break;
+        case _MOUSE:
+            oled_write_P(PSTR("L: Left/Right (Mute)"), false);
+            oled_advance_page(true);
+            oled_write_P(PSTR("R: Up/Down"), false);
+            oled_advance_page(true);
+            break;
+        case _MUSIC:
+            oled_write_P(PSTR("L: Vol +/- (Play)"), false);
+            oled_advance_page(true);
+            oled_write_P(PSTR("R: Prev/Next"), false);
+            oled_advance_page(true);
+            break;
+        case _RGB:
+            oled_write_P(PSTR("L: Hue +/- (LED tog)"), false);
+            oled_advance_page(true);
+            oled_write_P(PSTR("R: Brightness +/-"), false);
+            oled_advance_page(true);
+            break;
+    }
+}
+
+#ifdef DOUBLE_BAR
+void render_content(uint16_t bit_mask) {
+#endif
+#ifndef DOUBLE_BAR
+void render_content(uint8_t bit_mask) {
+#endif
+    if (is_keyboard_master()) {
+        //anim_sleep = timer_read32();
+        oled_set_cursor(0, 0);
+        render_enc_state();
+
+        oled_set_cursor(0, 2);
+        render_encoder_info();
+
+        //#ifdef V1
+        //#   ifdef DOUBLE_BAR
+        //oled_set_cursor(2, 5);
+        //#   endif
+        //#   ifndef DOUBLE_BAR
+        //oled_set_cursor(7, 5);
+        //#   endif
+        //#endif
+
+        #ifdef V2
+        if (get_highest_layer(layer_state) == _SETTINGS) {
+            #   ifdef RGBLIGHT_ENABLE
+            oled_set_cursor(0, 5);
+            oled_advance_page(true);
+            oled_set_cursor(0, 5);
+            render_led_status();
+            #   endif // RGBLIGHT_ENABLE
+        } else if (recording || playing || saved) {
+            oled_set_cursor(0, 5);
+            oled_advance_page(true);
+            oled_set_cursor(7, 5);
+            render_rec();
+            //oled_advance_page(true);
+        } else {
+            #ifdef DOUBLE_BAR
+            oled_set_cursor(0, 5);
+            oled_advance_page(true);
+            oled_set_cursor(2, 5);
+            #endif
+            #ifndef DOUBLE_BAR
+            oled_set_cursor(0, 5);
+            anim_timer = sync_timer_read32();
+            oled_set_cursor(7, 5);
+            #endif
+            render_progress_bar(bit_mask);
+        }
+        oled_set_cursor(0, 7);
+        #endif
+        //#ifdef V1
+        //render_progress_bar(bit_mask);
+        //#endif 
+        
+        //clean previous record animation 
+        //#ifdef V1
+        //oled_set_cursor(0, 7);
+        //oled_advance_page(true);
+        //oled_set_cursor(0, 7);
+        //#endif
+
+        render_layer();
+        //#ifdef V1
+        //#   ifdef DYNAMIC_MACRO_ENABLE
+        //oled_set_cursor(0, 7);
+        //render_rec();
+        //#   endif
+        //#endif
+    } else {
+        //oled_set_cursor(7, 3);
+        //render_progress_bar(bit_mask);
+        //render_layer();
+        oled_set_cursor(1, 6);
+        render_cat(bit_mask);
+    }
+}
+
+void render_sides(void) {
+    // each side are rendered separately
+    #ifdef DOUBLE_BAR
+    static uint16_t bit_mask;
+    #endif
+    #ifndef DOUBLE_BAR
+    static uint8_t bit_mask;
+    #endif
+    bit_mask = get_wpm_bit_mask(); 
+    
+    //oled_set_cursor(0, 1);
+    //oled_advance_page(true);
+    //oled_set_cursor(0, 1);
+
+    //oled_clear();
+    if (new_content || (bit_mask != 0)) {
+        // if we start typing the screen wakes up and the sleep timer is reset
+        oled_on();
+        
+        anim_sleep = sync_timer_read32();
+        new_content = false;
+        
+        render_content(bit_mask);
+    } else if (sync_timer_elapsed32(anim_sleep) > OLED_TIMEOUT) {
+        // ok but if we stop typing the screen goes to sleep after OLED_TIMEOUT
+        oled_off();
+    } else {
+        render_content(bit_mask);
+    }
+}
+
+oled_rotation_t oled_init_user(oled_rotation_t rotation) {
+    //oled_scroll_set_speed(0);
+    //oled_scroll_set_area(0, 5);
+    anim_sleep = sync_timer_read32(); // for render_splash
+    return OLED_ROTATION_180; 
+}
+
+/*
+static uint8_t bar_progression = 0;
+
+uint8_t get_progress_bit_mask(void) {   
+    static uint8_t bit_mask;
+    bit_mask = 0xFF >> (PROGRESS_BAR_SIZE - bar_progression); // not is more efficient than (8 - current_wpm)
+    bar_progression++;
+    return bit_mask;
+}
+
+static const char PROGMEM kyria_logo[3][38] = {
+    {0x04, 0x04, 0xFE, 0xFF, 0x60, 0x30, 0x78, 0xEE, 0xC7, 0x00, 0x80, 0xC0, 0xE0, 0x00, 0x00, 0xC0, 0xE0, 0x00,
+     0x80, 0xC0, 0xE0, 0x80, 0x40, 0xE0, 0xC0, 0x00, 0x40, 0xE6, 0xF3, 0x00, 0x90, 0xC8, 0x2C, 0x2C, 0xFC, 0xF8,
+     0x00, 0x00},
+    {0x00, 0x04, 0x07, 0x07, 0x02, 0x00, 0x00, 0x07, 0x07, 0x02, 0x60, 0xCF, 0x9F, 0x88, 0x44, 0x3F, 0x1F, 0x00,
+     0x00, 0x1F, 0x1F, 0x08, 0x00, 0x80, 0x80, 0x80, 0x00, 0x0F, 0x0F, 0x04, 0x01, 0x03, 0x82, 0x02, 0x03, 0x03,
+     0x06, 0x04},
+    {0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x7C, 0x08, 0x04, 0x0C, 0x00, 0x38, 0x54, 0x4C, 0x20, 0x08, 0x3C, 0x40,
+     0x38, 0x04, 0x40, 0x00, 0x03, 0x65, 0x51, 0x4D, 0x63, 0x60, 0x00, 0x40, 0x02, 0x43, 0x7F, 0x60, 0x00, 0x00,
+     0x00, 0x00}
+};                
+
+void render_splash(void) {
+    if (bar_progression > PROGRESS_BAR_SIZE) {
+        startup = false;
+        new_content = true;
+        oled_clear();
+    } else {
+        static uint8_t bit_mask;
+        bit_mask = get_progress_bit_mask(); 
+        oled_set_cursor(7, 1);
+        for (int i = 0; i < 3; i++) {
+            oled_write_raw_P(kyria_logo[i], sizeof(kyria_logo[0]));
+        }
+        oled_set_cursor(6, 1);
+        render_progress_bar(bit_mask);
+    }
+
+    anim_timer = sync_timer_read32();
+}
+*/
+
+
+bool oled_task_user(void) {
+    if (startup) {
+        if (sync_timer_elapsed32(anim_timer) > ANIM_FRAME_DURATION) {
+            oled_set_cursor(8, 3);
+            oled_write_P(PSTR("Kyria"), false);
+            oled_set_cursor(10, 5);
+            
+            render_loop();
+            
+            if (loop_circle == 0) {
+                startup--;
+            }
+            if (!startup) {
+                oled_clear();
+            }
+
+            anim_timer = sync_timer_read32();
+        }
+    } else {
+        render_sides();
+    }
+
+    return false;
+}
+
+
+#endif // OLED_ENABLE
