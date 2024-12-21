@@ -1,0 +1,3 @@
+#define TAPPING_TOGGLE 2
+#define FORCE_NKRO
+#define TAPPING_FORCE_HOLD
