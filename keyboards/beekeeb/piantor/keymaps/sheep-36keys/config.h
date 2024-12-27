@@ -22,7 +22,7 @@
 //#define IGNORE_MOD_TAP_INTERRUPT
 #define PERMISSIVE_HOLD // mod if another key is pressed and released before the tapping term while the mod-tap key is pressed
 //#define HOLD_ON_OTHER_KEY_PRESS // hold if another key is pressed whateve the tapping term
-#define TAPPING_TERM 200
+#define TAPPING_TERM 150
 #define QUICK_TAP_TERM 0 // disable double tap to hold
 
 #define ONESHOT_TAP_TOGGLE 2  /* Tapping this number of times holds the key until tapped once again. */
