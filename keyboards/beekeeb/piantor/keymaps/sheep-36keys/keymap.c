@@ -23,18 +23,18 @@ enum layers {
     _SETTINGS = 3,
 };
 
-const uint16_t PROGMEM en_combo[] = {OSM(MOD_LSFT), OSM(MOD_LCTL), COMBO_END};
-const uint16_t PROGMEM sn_combo[] = {OSM(MOD_LALT), OSM(MOD_LCTL), COMBO_END};
-const uint16_t PROGMEM se_combo[] = {OSM(MOD_LALT), OSM(MOD_LSFT), COMBO_END};
-const uint16_t PROGMEM sen_combo[] = {OSM(MOD_LALT), OSM(MOD_LSFT), OSM(MOD_LCTL), COMBO_END};
+// const uint16_t PROGMEM en_combo[] = {OSM(MOD_LSFT), OSM(MOD_LCTL), COMBO_END};
+// const uint16_t PROGMEM sn_combo[] = {OSM(MOD_LALT), OSM(MOD_LCTL), COMBO_END};
+// const uint16_t PROGMEM se_combo[] = {OSM(MOD_LALT), OSM(MOD_LSFT), COMBO_END};
+// const uint16_t PROGMEM sen_combo[] = {OSM(MOD_LALT), OSM(MOD_LSFT), OSM(MOD_LCTL), COMBO_END};
 const uint16_t PROGMEM rt_combo[] = {KC_J, KC_K, COMBO_END};
 const uint16_t PROGMEM ti_combo[] = {KC_K, KC_L, COMBO_END};
 
 combo_t key_combos[] = {
-    COMBO(en_combo, OSM(MOD_LSFT | MOD_LCTL)),
-    COMBO(sn_combo, OSM(MOD_LALT | MOD_LCTL)),
-    COMBO(se_combo, OSM(MOD_LSFT | MOD_LALT)),
-    COMBO(sen_combo, OSM(MOD_LSFT | MOD_LCTL | MOD_LALT)),
+   // COMBO(en_combo, OSM(MOD_LSFT | MOD_LCTL)),
+   // COMBO(sn_combo, OSM(MOD_LALT | MOD_LCTL)),
+   // COMBO(se_combo, OSM(MOD_LSFT | MOD_LALT)),
+   // COMBO(sen_combo, OSM(MOD_LSFT | MOD_LCTL | MOD_LALT)),
     COMBO(ti_combo, C(KC_TAB)),
     COMBO(rt_combo, C(S(KC_TAB)))
 };
@@ -60,8 +60,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  * ,--------------------------                 .---------------------.
  * | Q | C | O |    P    | W |                 |  J |  M | D | ! | Y |
  * |---+---+---+---------+---+                 +----+----+---+---+---|
- * | A | S | E |    N    | F |                 |  L |  R | T | I | U |
- * |---+---+---+---------+---+                 +----+----+---+---+---|
+ * | A | S | E |    N    | F | user            |  L |  R | T | I | U |
+ * |---+---+---+---------+---+ key             +----+----+---+---+---|
  * | Z | X | ? |    V    | B |                 |  : |  H | G | F | K |
  * |---+---+---+---------+---+-----------------+----+----+---+---+---|
  *             | LWR/TAB | _ | RSE/ESC |         CR | ST | GR/ESC |
@@ -71,7 +71,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      KC_Q ,  KC_W,  KC_E,     KC_R,   KC_T,           KC_Y,   KC_U,    KC_I,   KC_O,    KC_P,
      KC_A ,  KC_S,  KC_D,     KC_F,   KC_G,           KC_H,   KC_J,    KC_K,   KC_L, KC_SCLN,
      KC_Z ,  KC_X,  KC_C,     KC_V,   KC_B,           KC_N,   KC_M, KC_COMM, KC_DOT, KC_SLSH,
-                 CTL_ESC, MOVE_SPC, NUM_TAB,           KC_ENT, KC_LSFT, GR_ESC
+        KC_ESC, MOVE_SPC, NUM_TAB,           KC_ENT, KC_LSFT, GR_ESC
     ),
 
 // DM_REC1, DM_REC2,     DM_PLY2  , DM_PLY1, 
@@ -115,9 +115,19 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
       KC_1  ,   KC_2,   KC_3 ,   KC_4 ,   KC_5 ,        KC_6,   KC_7 ,   KC_8 ,   KC_9 ,   KC_0,
       KC_F11, KC_F12, XXXXXXX, XXXXXXX, QK_BOOT,      XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
       KC_F1 ,  KC_F2,  KC_F3 ,  KC_F4 ,  KC_F5 ,        KC_F6,  KC_F7 ,  KC_F8 ,  KC_F9 , KC_F10 ,
-                     _______, _______, _______,       _______, _______, _______
+               _______, _______, _______,       _______, _______, _______
     )
 
 };
 /* clang-format on */
+
+/*
+//layer_state_t layer_state_set_user(layer_state_t state) {
+bool led_update_user(led_t led_state) {
+    //writePin(GP25, (layer_state_cmp(state, _MOVE)));
+    writePin(GP25, 0);
+    return true;
+}
+*/
+
 
