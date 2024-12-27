@@ -48,6 +48,7 @@ combo_t key_combos[] = {
 #define MOVE_SPC LT(_MOVE, KC_SPC)
 #define MOVE_TAB LT(_MOVE, KC_TAB)
 #define GR_ESC MT(MOD_RALT, KC_ESC)
+#define MOVE_ENT LT(_MOVE, KC_ENT)
 
 // The notation `mod/tap` denotes a key that activates the modifier `mod` when held down, and
 // produces the key `tap` when tapped (i.e. pressed and released).
@@ -71,7 +72,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      KC_Q ,  KC_W,  KC_E,     KC_R,   KC_T,           KC_Y,   KC_U,    KC_I,   KC_O,    KC_P,
      KC_A ,  KC_S,  KC_D,     KC_F,   KC_G,           KC_H,   KC_J,    KC_K,   KC_L, KC_SCLN,
      KC_Z ,  KC_X,  KC_C,     KC_V,   KC_B,           KC_N,   KC_M, KC_COMM, KC_DOT, KC_SLSH,
-        KC_ESC, MOVE_SPC, NUM_TAB,           KC_ENT, KC_LSFT, GR_ESC
+                 KC_ESC, MOVE_SPC, NUM_TAB,           MOVE_ENT, KC_LSFT, GR_ESC
     ),
 
 // DM_REC1, DM_REC2,     DM_PLY2  , DM_PLY1, 
@@ -91,10 +92,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  * `-----------------------------------------------------------------------------------'
  */
     [_MOVE] = LAYOUT_split_3x5_3(
-      _______, XXXXXXX, KC_PSCR, XXXXXXX, XXXXXXX,                      KC_PGUP, KC_HOME,   KC_UP,  KC_END, KC_BSPC,
+                        _______, XXXXXXX, KC_PSCR, XXXXXXX, XXXXXXX,    KC_PGUP, KC_HOME,   KC_UP,  KC_END, KC_BSPC,
       KC_LGUI, OSM(MOD_LALT), OSM(MOD_LSFT), OSM(MOD_LCTL), KC_CAPS,    KC_PGDN, KC_LEFT, KC_DOWN, KC_RGHT, KC_DEL ,
-      _______, _______, _______, _______, _______,                      KC_MRWD, KC_MPLY, KC_MNXT, KC_VOLD, KC_VOLU,
-                                         _______, _______,  KC_TAB,     _______, _______, _______
+                        _______, _______, _______, _______, _______,    KC_MRWD, KC_MPLY, KC_MNXT, KC_VOLD, KC_VOLU,
+                                          _______, _______,  KC_TAB,    _______, _______, _______
     ),
 
 /*
@@ -112,10 +113,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  * `-----------------------------------------------------------------------------------'
  */
     [_NUM] = LAYOUT_split_3x5_3(
-      KC_1  ,   KC_2,   KC_3 ,   KC_4 ,   KC_5 ,        KC_6,   KC_7 ,   KC_8 ,   KC_9 ,   KC_0,
+      KC_1  ,   KC_2,   KC_3 ,   KC_4 ,   KC_5 ,      KC_6,   KC_7 ,   KC_8 ,   KC_9 ,   KC_0,
       KC_F11, KC_F12, XXXXXXX, XXXXXXX, QK_BOOT,      XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
-      KC_F1 ,  KC_F2,  KC_F3 ,  KC_F4 ,  KC_F5 ,        KC_F6,  KC_F7 ,  KC_F8 ,  KC_F9 , KC_F10 ,
-               _______, _______, _______,       _______, _______, _______
+      KC_F1 ,  KC_F2,  KC_F3 ,  KC_F4 ,  KC_F5 ,      KC_F6,  KC_F7 ,  KC_F8 ,  KC_F9 , KC_F10 ,
+                      _______, _______, _______,      _______, _______, _______
     )
 
 };
