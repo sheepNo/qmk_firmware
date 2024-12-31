@@ -23,6 +23,7 @@ enum layers {
     _SETTINGS = 3,
 };
 
+
 // const uint16_t PROGMEM en_combo[] = {OSM(MOD_LSFT), OSM(MOD_LCTL), COMBO_END};
 // const uint16_t PROGMEM sn_combo[] = {OSM(MOD_LALT), OSM(MOD_LCTL), COMBO_END};
 // const uint16_t PROGMEM se_combo[] = {OSM(MOD_LALT), OSM(MOD_LSFT), COMBO_END};
@@ -35,8 +36,8 @@ combo_t key_combos[] = {
    // COMBO(sn_combo, OSM(MOD_LALT | MOD_LCTL)),
    // COMBO(se_combo, OSM(MOD_LSFT | MOD_LALT)),
    // COMBO(sen_combo, OSM(MOD_LSFT | MOD_LCTL | MOD_LALT)),
-    COMBO(ti_combo, C(KC_TAB)),
-    COMBO(rt_combo, C(S(KC_TAB)))
+   COMBO(ti_combo, C(KC_TAB)),
+   COMBO(rt_combo, C(S(KC_TAB)))
 };
 
 // Aliases for readability
