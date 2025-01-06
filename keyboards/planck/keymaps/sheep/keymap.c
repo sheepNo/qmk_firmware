@@ -26,6 +26,7 @@ enum layers {
 // Aliases for readability
 #define CTL_ESC  LCTL_T(KC_ESC)
 #define MOVE_TAB LT(_MOVE, KC_TAB)
+#define MOVE_SPC LT(_MOVE, KC_SPC)
 // The notation `mod/tap` denotes a key that activates the modifier `mod` when held down, and
 // produces the key `tap` when tapped (i.e. pressed and released).
 
@@ -48,10 +49,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      MOVE_TAB ,     KC_Q ,    KC_W,    KC_E,   KC_R,     KC_T,   KC_Y,   KC_U,    KC_I,       KC_O,          KC_P, KC_LBRC,
      CTL_ESC  ,     KC_A ,    KC_S,    KC_D,   KC_F,     KC_G,   KC_H,   KC_J,    KC_K,       KC_L,       KC_SCLN, KC_QUOT,
      KC_BSLS  ,     KC_Z ,    KC_X,    KC_C,   KC_V,     KC_B,   KC_N,   KC_M, KC_COMM,     KC_DOT,       KC_SLSH, KC_RBRC,
-     DM_REC1  , TG(_MOVE), KC_LGUI, KC_LALT, KC_SPC, TT(_NUM), KC_ENT, KC_RSFT, KC_RALT, TT(_MOVE), TG(_SETTINGS), DM_PLY1
+     DM_REC1  , TG(_MOVE), KC_LGUI, KC_LALT, MOVE_SPC, TT(_NUM), KC_ENT, KC_RSFT, KC_RALT, TT(_MOVE), TG(_SETTINGS), DM_PLY1
     ),
 
-// DM_REC1, DM_REC2,     DM_PLY2  , DM_PLY1, 
+// DM_REC1, DM_REC2,     DM_PLY2  , DM_PLY1,
 
 
 /*
@@ -60,7 +61,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  * ,---------------------------------------------------------------------------------------.
  * |        |      |      | PrtSc|      |      | PgUp | Home |   ↑  | End  | BkSpc| Insert |
  * |--------+------+------+------+------+------|------+------+------+------+------+--------|
- * |        | SUPER|  ALT | SHIFT| CTRL |CAPSLK| PgDn |  ←   |   ↓  |   →  |  Del |  KC_NO | // évite de taper M 
+ * |        | SUPER|  ALT | SHIFT| CTRL |CAPSLK| PgDn |  ←   |   ↓  |   →  |  Del |  KC_NO | // évite de taper M
  * |--------+------+------+------+------+------+------+------+------+------+------+--------| // par erreur
  * |        |      |      |      |      |      |      | prev | play | next |      |        |
  * |--------+------+------+------+------+------+------+------+------+------+------+--------|
@@ -69,7 +70,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  */
     [_MOVE] = LAYOUT_planck_grid(
       _______, _______, XXXXXXX, KC_PSCR, XXXXXXX, XXXXXXX, KC_PGUP, KC_HOME,   KC_UP,  KC_END, KC_BSPC, KC_INS,
-      _______, KC_LGUI, KC_LALT, KC_LSFT, KC_LCTL, KC_CAPS, KC_PGDN, KC_LEFT, KC_DOWN, KC_RGHT, KC_DEL ,XXXXXXX,
+      _______, OSM(MOD_LGUI), OSM(MOD_LALT), OSM(MOD_LSFT), OSM(MOD_LCTL), KC_CAPS, KC_PGDN, KC_LEFT, KC_DOWN, KC_RGHT, KC_DEL ,XXXXXXX,
       _______, _______, _______, _______, _______, _______,  KC_APP, KC_MRWD, KC_MPLY, KC_MNXT, KC_VOLD, KC_VOLU,
       _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______
     ),
@@ -95,7 +96,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 
 
-/* 
+/*
  * Settings Layer: SETTINGS
  *                      v------------------------RGB CONTROL--------------------v
  * ,-----------------------------------------------------------------------------------.
@@ -192,13 +193,13 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 /* clang-format off */
 float melody[8][2][2] = {
-    {{440.0f, 8}, {440.0f, 24}}, 
-    {{440.0f, 8}, {440.0f, 24}}, 
-    {{440.0f, 8}, {440.0f, 24}}, 
-    {{440.0f, 8}, {440.0f, 24}}, 
-    {{440.0f, 8}, {440.0f, 24}}, 
-    {{440.0f, 8}, {440.0f, 24}}, 
-    {{440.0f, 8}, {440.0f, 24}}, 
+    {{440.0f, 8}, {440.0f, 24}},
+    {{440.0f, 8}, {440.0f, 24}},
+    {{440.0f, 8}, {440.0f, 24}},
+    {{440.0f, 8}, {440.0f, 24}},
+    {{440.0f, 8}, {440.0f, 24}},
+    {{440.0f, 8}, {440.0f, 24}},
+    {{440.0f, 8}, {440.0f, 24}},
     {{440.0f, 8}, {440.0f, 24}},
 };
 /* clang-format on */
@@ -215,7 +216,7 @@ float melody[8][2][2] = {
 #define ET12_MAJOR_THIRD 1.259921
 #define ET12_PERFECT_FOURTH 1.33484
 #define ET12_TRITONE 1.414214
-#define ET12_PERFECT_FIFTH 1.498307	
+#define ET12_PERFECT_FIFTH 1.498307
 
 
 
@@ -343,7 +344,7 @@ uint32_t callback_led_off(uint32_t trigger_time, void *cb_arg) {
  *     7 8 1 2
 */
 
-// TODO :      _______, _______, _______, _______, _______, _______,  KC_APP, KC_MRWD, KC_MPLY, KC_MNXT, KC_VOLD, KC_VOLU,    
+// TODO :      _______, _______, _______, _______, _______, _______,  KC_APP, KC_MRWD, KC_MPLY, KC_MNXT, KC_VOLD, KC_VOLU,
 
 void post_process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
@@ -379,7 +380,7 @@ void post_process_record_user(uint16_t keycode, keyrecord_t *record) {
         case KC_TAB:
         case KC_Q:
         case KC_W:
-        case KC_ESC:     
+        case KC_ESC:
         case KC_A:
         case KC_S:
         case KC_GRV:
@@ -398,10 +399,10 @@ void post_process_record_user(uint16_t keycode, keyrecord_t *record) {
             };
             break;
         case KC_E:
-        case KC_R:  
+        case KC_R:
         case KC_T:
         case KC_D:
-        case KC_F:  
+        case KC_F:
         case KC_LSFT:
         case KC_LCTL:
         case KC_3:
@@ -506,7 +507,7 @@ void post_process_record_user(uint16_t keycode, keyrecord_t *record) {
         case KC_COMM:
         case KC_RSFT:
         case KC_RALT:
-        case KC_PGDN: 
+        case KC_PGDN:
         case KC_DOWN:
             if (record->event.pressed) {
                 uint8_t idx = 1;
@@ -568,7 +569,7 @@ layer_state_t layer_state_set_user(layer_state_t state) {
         rgblight_sethsv_at(default_hues[idx], default_sats[idx], default_val, idx);
         //rgblight_sethsv_at(hues[6], default_sat, default_val, 6);
     }
-    
+
     if (layer_state_cmp(state, _NUM)) {
         uint8_t idx = 0;
         rgblight_sethsv_at(HSV_PURPLE, idx);
@@ -588,7 +589,7 @@ layer_state_t layer_state_set_user(layer_state_t state) {
         rgblight_sethsv_at(default_hues[idx], default_sats[idx], default_val, idx);
         //rgblight_sethsv_at(hues[2], default_sat, default_val, 2);
     }
-    
+
     //rgblight_set_layer_state(0, layer_state_cmp(state, _NUM)); // num_layer rgb
     //rgblight_set_layer_state(1, layer_state_cmp(state, _MOVE)); // move_layer rgb
     //rgblight_set_layer_state(2, layer_state_cmp(state, _SETTINGS)); // settings_layer rgb
