@@ -539,21 +539,21 @@ void post_process_record_user(uint16_t keycode, keyrecord_t *record) {
     }
 }
 
-void dynamic_macro_record_start_user(int8_t direction) {
+bool dynamic_macro_record_start_user(int8_t direction) {
     // Triggered when you start recording a macro.
     uint8_t idx = 7;
     // HSV_RED
     rgblight_sethsv_at(HSV_RED, idx);
     //rgblight_set_layer_state(3, true);
-    return;
+    return true;
 }
 
-void dynamic_macro_record_end_user(int8_t direction) {
+bool dynamic_macro_record_end_user(int8_t direction) {
     // Triggered when the macro recording is stopped.
     uint8_t idx = 7;
     rgblight_sethsv_at(default_hues[idx], default_sats[idx], default_val, idx);
     //rgblight_set_layer_state(3, false);
-    return;
+    return true;
 }
 
 // #TODO : illuminer les touches quand le layers MOVE est activé et revoir la répartitions des touches pour faire clignoter les leds du bas un peu plus souvent
