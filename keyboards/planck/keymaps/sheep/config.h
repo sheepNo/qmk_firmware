@@ -56,22 +56,23 @@
 //#    define RGBLIGHT_EFFECT_ALTERNATING
 #    define RGBLIGHT_EFFECT_BREATHING
 //#    define RGBLIGHT_EFFECT_CHRISTMAS
-//#    define RGBLIGHT_EFFECT_KNIGHT 	
-//#    define RGBLIGHT_EFFECT_RAINBOW_MOOD 
-//#    define RGBLIGHT_EFFECT_RAINBOW_SWIRL 
-//#    define RGBLIGHT_EFFECT_RGB_TEST 	
-//#    define RGBLIGHT_EFFECT_SNAKE 	
-#    define RGBLIGHT_EFFECT_STATIC_GRADIENT 
-//#    define RGBLIGHT_EFFECT_TWINKLE 
+//#    define RGBLIGHT_EFFECT_KNIGHT
+//#    define RGBLIGHT_EFFECT_RAINBOW_MOOD
+//#    define RGBLIGHT_EFFECT_RAINBOW_SWIRL
+//#    define RGBLIGHT_EFFECT_RGB_TEST
+//#    define RGBLIGHT_EFFECT_SNAKE
+#    define RGBLIGHT_EFFECT_STATIC_GRADIENT
+//#    define RGBLIGHT_EFFECT_TWINKLE
 #    define RGBLIGHT_SLEEP
 #endif
 
 // mod-tap :
 // Lets you roll mod-tap keys
-//#define IGNORE_MOD_TAP_INTERRUPT 
+//#define IGNORE_MOD_TAP_INTERRUPT
 #define PERMISSIVE_HOLD // mod if another key is pressed and released before the tapping term while the mod-tap key is pressed
-#define TAPPING_FORCE_HOLD // upgrade to #define TAPPING_FORCE_HOLD_PER_KEY if issue with TT() keycodes appear : #define TAPPING_FORCE_HOLD_PER_KEYo
+// #define TAPPING_FORCE_HOLD // upgrade to #define TAPPING_FORCE_HOLD_PER_KEY if issue with TT() keycodes appear : #define TAPPING_FORCE_HOLD_PER_KEYo
 #define TAPPING_TERM 150
+#define QUICK_TAP_TERM 0 // disable double tap to hold
 
 // dyn macros
 #define DYNAMIC_MACRO_SIZE 48
@@ -80,7 +81,7 @@
 
 // size reduction
 #define DISABLE_LEADER
-#define NO_ACTION_ONESHOT
+//#define NO_ACTION_ONESHOT
 // Disabled -> incompatible with LTO
 #define NO_ACTION_MACRO
 #define NO_ACTION_FUNCTION
